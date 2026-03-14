@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: beatcore-bot
+    environment:
+      # Discord Bot Configuration
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
+      - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET}
+      - DISCORD_CALLBACK_URL=${DISCORD_CALLBACK_URL}
+      
+      # Dashboard Server Configuration
+      - PORT=3000
+      - SERVER_PORT=3000
+      
+      # Node Environment
+      - NODE_ENV=production
+    
+    ports:
+      - "3000:3000"
+    
+    volumes:
+      # Mount playlists data for persistence
+      - ./playlists.json:/app/playlists.json
+      # Optional: Mount yt-dlp cache for faster startups
+      - yt-dlp-cache:/root/.cache/yt-dlp
+    
+    restart: unless-stopped
+    
+    # Uncomment the following if your bot needs to run in non-legacy opcode mode
+    # environment:
+    #   - DISCORD_GATEWAY_VERSION=9
+
+volumes:
+  yt-dlp-cache:
+    driver: local

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeatCore Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const CURRENT_USER = {
+            id: "<%= user.id %>",
+            username: "<%= user.username %>",
+            avatar: "<%= user.avatar %>"
+        };
+    </script>
+</head>
+<body class="dashboard-page">
+    
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="/images/logo.png" alt="Logo" class="sidebar-logo" onerror="this.style.display='none'">
+                <h2 class="sidebar-title">BeatCore</h2>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="active">
+                        <a href="#" id="nav-home">
+                            <span class="material-icons-outlined">home</span>
+                            <span>Home</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" id="nav-history">
+                            <span class="material-icons-outlined">history</span>
+                            <span>History</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" id="nav-playlists">
+                            <span class="material-icons-outlined">queue_music</span>
+                            <span>Playlists</span>
+                        </a>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#" id="nav-effects-toggle">
+                            <span class="material-icons-outlined">auto_awesome</span>
+                            <span>Effects</span>
+                            <span class="material-icons-outlined submenu-arrow" style="margin-left: auto; font-size: 18px;">expand_more</span>
+                        </a>
+                        <ul class="sidebar-submenu" id="effects-submenu">
+                            <li>
+                                <button class="effect-item sidebar-effect-item" data-effect="bassboost">
+                                    <span class="material-icons-outlined">speaker</span>
+                                    <span>Bass Boost</span>
+                                </button>
+                            </li>
+                            <li>
+                                <button class="effect-item sidebar-effect-item" data-effect="nightcore">
+                                    <span class="material-icons-outlined">speed</span>
+                                    <span>Nightcore</span>
+                                </button>
+                            </li>
+                            <li>
+                                <button class="effect-item sidebar-effect-item" data-effect="vaporwave">
+                                    <span class="material-icons-outlined">slow_motion_video</span>
+                                    <span>Vaporwave</span>
+                                </button>
+                            </li>
+                            <li>
+                                <button class="effect-item sidebar-effect-item" data-effect="8d">
+                                    <span class="material-icons-outlined">surround_sound</span>
+                                    <span>8D Audio</span>
+                                </button>
+                            </li>
+                            <li>
+                                <button class="effect-item sidebar-effect-item" data-effect="karaoke">
+                                    <span class="material-icons-outlined">mic</span>
+                                    <span>Karaoke</span>
+                                </button>
+                            </li>
+                            <li>
+                                <button class="effect-item sidebar-effect-item" data-effect="tremolo">
+                                    <span class="material-icons-outlined">waves</span>
+                                    <span>Tremolo</span>
+                                </button>
+                            </li>
+                            <li>
+                                <button class="effect-item sidebar-effect-item" data-effect="vibrato">
+                                    <span class="material-icons-outlined">graphic_eq</span>
+                                    <span>Vibrato</span>
+                                </button>
+                            </li>
+                            <li>
+                                <button class="effect-item sidebar-effect-item" data-effect="surround">
+                                    <span class="material-icons-outlined">settings_overscan</span>
+                                    <span>Surround</span>
+                                </button>
+                            </li>
+                            <li>
+                                <button class="effect-item sidebar-effect-item" data-effect="treble">
+                                    <span class="material-icons-outlined">equalizer</span>
+                                    <span>Treble Boost</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-card-top">
+                    <div class="user-profile-info">
+                        <% if (user && user.avatar) { %>
+                            <img src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png" alt="User" class="user-avatar">
+                        <% } else { %>
+                            <div class="user-avatar-placeholder"><span class="material-icons-outlined">person</span></div>
+                        <% } %>
+                        <span class="username"><%= user ? user.username : 'User' %></span>
+                    </div>
+                    <a href="/logout" class="logout-btn" title="Logout">
+                        <span class="material-icons-outlined">logout</span>
+                    </a>
+                </div>
+                <div class="user-card-bottom">
+                    <div class="server-select-container">
+                        <span class="material-icons-outlined select-icon">dns</span>
+                        <select class="server-select">
+                            <% if (typeof guilds !== 'undefined' && guilds.length > 0) { %>
+                                <% guilds.forEach(guild => { %>
+                                    <option value="<%= guild.id %>"><%= guild.name %></option>
+                                <% }); %>
+                            <% } else { %>
+                                <option value="" disabled selected>No Servers</option>
+                            <% } %>
+                        </select>
+                        <span class="material-icons-outlined dropdown-arrow">expand_more</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="sidebar-overlay" id="sidebarOverlay"></div>
+            <header class="top-bar">
+                <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                    <span class="material-icons-outlined">menu</span>
+                </button>
+                <div class="search-bar-container">
+                    <span class="material-icons-outlined search-icon">search</span>
+                    <input type="text" class="search-input" placeholder="Search for songs, artists..." id="searchInput">
+                </div>
+
+                <button class="import-btn" id="importPlaylistBtn" style="display: none;">
+                    <span class="material-icons-outlined">file_download</span>
+                    <span>Import</span>
+                </button>
+                
+                <div class="online-users-container" id="onlineUsers">
+                    <!-- Online users will be injected here -->
+                </div>
+            </header>
+
+            <div class="search-results-container" id="searchResults" style="display: none;">
+                <!-- Results will be injected here -->
+            </div>
+            
+            <div id="home-view" class="home-view-container">
+                <div class="welcome-section">
+                    <h1>Welcome, <%= user.global_name || user.username %></h1>
+                </div>
+
+                <div class="featured-playlists-section">
+                    <h2>Featured Playlists</h2>
+                    <div class="featured-placeholder">
+                        <span class="material-icons-outlined">queue_music</span>
+                        <p>Coming Soon</p>
+                    </div>
+                </div>
+
+                <div class="queue-section">
+                    <div class="queue-header-top">
+                        <h2>Playing Queue</h2>
+                        <button class="clear-queue-btn" onclick="clearQueue()" title="Clear Queue">
+                            <span class="material-icons-outlined">delete_sweep</span>
+                        </button>
+                    </div>
+                    <div class="queue-container">
+                        <div class="queue-header">
+                            <span class="q-col-pos">#</span>
+                            <span class="q-col-title">Title</span>
+                            <span class="q-col-duration">Duration</span>
+                            <span class="q-col-added">Added By</span>
+                            <span class="q-col-action"></span>
+                        </div>
+                        <div class="queue-list" id="queueList">
+                            <div class="queue-empty">
+                                <span class="material-icons-outlined">music_off</span>
+                                <p>Queue is empty</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="history-view" class="history-view-container" style="display: none;">
+                <div class="queue-section">
+                    <div class="queue-header-top">
+                        <h2>Recently Played</h2>
+                    </div>
+                    <div class="queue-container">
+                        <div class="queue-header">
+                            <span class="q-col-pos">#</span>
+                            <span class="q-col-title">Title</span>
+                            <span class="q-col-duration">Time</span>
+                            <span class="q-col-added">Added By</span>
+                            <span class="q-col-action"></span>
+                        </div>
+                        <div class="queue-list" id="historyList">
+                            <div class="queue-empty">
+                                <span class="material-icons-outlined">history</span>
+                                <p>No history yet</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playlists View -->
+            <div id="playlists-view" class="playlists-view-container" style="display: none;">
+                <div class="queue-section">
+                    <div class="queue-header-top">
+                        <h2>My Playlists</h2>
+                        <button class="control-btn" id="createPlaylistBtn" title="Create Playlist" style="background: var(--primary-color); border-radius: 4px; padding: 0 12px; height: 36px; font-size: 0.9rem; width: auto;">
+                            <span class="material-icons-outlined" style="font-size: 20px; margin-right: 6px;">add</span>
+                            Create
+                        </button>
+                    </div>
+                    
+                    <!-- Playlist List (Grid of Cards) -->
+                    <div class="playlists-card-container">
+                        <div id="playlistsListContainer" class="playlists-grid">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Single Playlist Detail View (Hidden by default) -->
+                    <div id="playlistDetailView" style="display: none;">
+                        <div class="playlist-header-info">
+                            <button class="back-to-playlists-btn" id="backToPlaylistsBtn">
+                                <span class="material-icons-outlined">arrow_back</span>
+                                Back
+                            </button>
+                            <h2 id="currentPlaylistName">Playlist Name</h2>
+                            <div class="playlist-actions">
+                                <button class="playlist-action-btn play-all" id="playAllPlaylistBtn" title="Play All">
+                                    <span class="material-icons-outlined">play_arrow</span>
+                                    Play All
+                                </button>
+                                <button class="playlist-action-btn delete" id="deletePlaylistBtn" title="Delete Playlist">
+                                    <span class="material-icons-outlined">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="queue-container">
+                            <div class="queue-header">
+                                <span class="q-col-pos">#</span>
+                                <span class="q-col-title">Title</span>
+                                <span class="q-col-duration">Duration</span>
+                                <span class="q-col-action"></span>
+                            </div>
+                            <div class="queue-list" id="playlistSongsList">
+                                <!-- Songs injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modals -->
+            <div class="modal-overlay" id="createPlaylistModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Create New Playlist</h3>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" id="newPlaylistName" placeholder="Playlist Name" class="modal-input">
+                    </div>
+                    <div class="modal-footer">
+                        <button class="modal-btn cancel" id="cancelCreatePlaylist">Cancel</button>
+                        <button class="modal-btn confirm" id="confirmCreatePlaylist">Create</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-overlay" id="addToPlaylistModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Add to Playlist</h3>
+                    </div>
+                    <div class="modal-body">
+                        <div id="addToPlaylistList" class="modal-list">
+                            <!-- List of playlists to select -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="modal-btn cancel" id="cancelAddToPlaylist">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirmation Modal -->
+            <div class="modal-overlay" id="confirmationModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="confirmationTitle">Confirmation</h3>
+                    </div>
+                    <div class="modal-body">
+                        <p id="confirmationMessage">Are you sure?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="modal-btn cancel" id="cancelConfirmation">Cancel</button>
+                        <button class="modal-btn confirm" id="confirmAction">Confirm</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Playlist Modal -->
+            <div class="modal-overlay" id="importPlaylistModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Import Playlist</h3>
+                    </div>
+                    <div class="modal-body">
+                        <div class="input-group" style="margin-bottom: 15px;">
+                            <label for="importUrl" style="display: block; margin-bottom: 5px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">Playlist URL</label>
+                            <input type="text" id="importUrl" placeholder="Spotify, Apple Music, YouTube..." class="modal-input">
+                            <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 5px;">Supports Spotify, Apple Music, YouTube, SoundCloud, etc.</p>
+                        </div>
+                        <div class="input-group">
+                            <label for="importName" style="display: block; margin-bottom: 5px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">Playlist Name (Optional)</label>
+                            <input type="text" id="importName" placeholder="Custom Name" class="modal-input">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="modal-btn cancel" id="cancelImportPlaylist">Cancel</button>
+                        <button class="modal-btn confirm" id="confirmImportPlaylist">Import</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="player-wrapper">
+                <div class="music-player-bar">
+                    <!-- Left: Album Art & Info -->
+                    <div class="player-left">
+                        <div class="bar-album-art">
+                            <div class="album-art-placeholder">
+                                <span class="material-icons-outlined">music_note</span>
+                            </div>
+                            <!-- <img src="" alt="Album Art" class="album-art-img"> -->
+                        </div>
+                        <div class="bar-track-info">
+                            <div class="track-title-container">
+                                <span class="track-title">Nothing Playing</span>
+                            </div>
+                            <span class="track-artist">Join voice channel</span>
+                        </div>
+                        <button class="add-to-playlist-btn" title="Add to Playlist">
+                            <span class="material-icons-outlined">add_circle_outline</span>
+                        </button>
+                    </div>
+
+                    <!-- Center: Controls & Progress -->
+                    <div class="player-center">
+                        <div class="player-controls">
+                            <button class="control-btn shuffle-btn" title="Shuffle">
+                                <span class="material-icons-outlined">shuffle</span>
+                            </button>
+                            <button class="control-btn prev-btn" title="Previous">
+                                <span class="material-icons-outlined">skip_previous</span>
+                            </button>
+                            <button class="control-btn play-pause-btn" title="Play/Pause">
+                                <span class="material-icons-outlined" style="font-size: 38px;">play_circle_filled</span>
+                            </button>
+                            <button class="control-btn next-btn" title="Next">
+                                <span class="material-icons-outlined">skip_next</span>
+                            </button>
+                            <button class="control-btn loop-btn" title="Loop">
+                                <span class="material-icons-outlined">repeat</span>
+                            </button>
+                        </div>
+                        <div class="player-progress">
+                            <span class="time current-time">0:00</span>
+                            <div class="slider-container">
+                                <input type="range" min="0" max="100" value="0" class="seek-slider" style="pointer-events: none;">
+                                <div class="slider-progress"></div>
+                            </div>
+                            <span class="time total-time">0:00</span>
+                        </div>
+                    </div>
+
+                    <!-- Right: Volume & Extras -->
+                    <div class="player-right">
+                        <div class="volume-container">
+                            <button class="control-btn volume-icon-btn">
+                                <span class="material-icons-outlined">volume_up</span>
+                            </button>
+                            <div class="slider-container volume-slider-container">
+                                <input type="range" min="0" max="100" value="100" class="volume-slider">
+                                <div class="slider-progress" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <div id="notification-container" class="notification-container"></div>
+    </div>
+    <script src="/js/dashboard.js?v=<%= Date.now() %>"></script>
+</body>
+</html>
