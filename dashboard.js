@@ -5,6 +5,7 @@ const session = require('express-session');
 const passport = require('passport');
 const { Strategy } = require('passport-discord');
 const path = require('path');
+const ytSearch = require('yt-search');
 require('dotenv').config();
 
 const { importPlaylist } = require('./utils/playlistImport');
@@ -411,6 +412,39 @@ function startDashboard(client, queueManager) {
         });
         
         res.json({ success: true, message: `Added ${playlist.songs.length} songs to queue` });
+    });
+
+    // API: Search YouTube
+    app.get('/api/search', async (req, res) => {
+        if (!req.isAuthenticated()) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const query = req.query.q;
+        if (!query || query.trim().length === 0) {
+            return res.status(400).json({ error: 'Query is required' });
+        }
+
+        try {
+            const searchResult = await ytSearch(query);
+            
+            if (!searchResult || !searchResult.videos) {
+                return res.json([]);
+            }
+
+            const videos = searchResult.videos.slice(0, 10).map(video => ({
+                title: video.title,
+                url: video.url,
+                thumbnail: video.thumbnail,
+                timestamp: video.duration ? video.duration.toString() : '?:??',
+                author: video.author ? video.author.name : 'Unknown'
+            }));
+
+            res.json(videos);
+        } catch (error) {
+            console.error('[Dashboard] Search error:', error);
+            res.status(500).json({ error: 'Search failed' });
+        }
     });
 
     server.listen(PORT, '0.0.0.0', () => {
