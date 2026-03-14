@@ -18,6 +18,12 @@ RUN npm install
 # Copy application code
 COPY . .
 
+# Create data directory for persistent storage
+RUN mkdir -p /app/data
+
+# Set environment to production
+ENV NODE_ENV=production
+
 # Expose the dashboard port
 EXPOSE 3000
 

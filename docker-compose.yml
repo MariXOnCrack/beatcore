@@ -22,9 +22,9 @@ services:
       - "3000:3000"
     
     volumes:
-      # Mount playlists data for persistence
-      - ./playlists.json:/app/playlists.json
-      # Optional: Mount yt-dlp cache for faster startups
+      # Use Docker volume for app data instead of direct file mounts
+      - app-data:/app/data
+      # Mount yt-dlp cache for faster startups
       - yt-dlp-cache:/root/.cache/yt-dlp
     
     restart: unless-stopped
@@ -34,5 +34,7 @@ services:
     #   - DISCORD_GATEWAY_VERSION=9
 
 volumes:
+  app-data:
+    driver: local
   yt-dlp-cache:
     driver: local
