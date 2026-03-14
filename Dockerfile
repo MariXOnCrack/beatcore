@@ -5,12 +5,17 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     curl \
+    wget \
+    git \
     build-essential \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Install yt-dlp via pip
-RUN pip3 install --no-cache-dir yt-dlp
+# Install yt-dlp - try pip first, fallback to direct download
+RUN pip3 install --no-cache-dir yt-dlp || \
+    (mkdir -p /usr/local/bin && \
+     wget -q https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp && \
+     chmod +x /usr/local/bin/yt-dlp)
 
 WORKDIR /app
 
