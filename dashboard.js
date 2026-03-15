@@ -232,6 +232,12 @@ function startDashboard(client, queueManager) {
             case 'shuffle':
                 queue.isShuffled = !queue.isShuffled;
                 break;
+            case 'jump':
+                const index = parseInt(value);
+                if (!isNaN(index)) {
+                    queue.jump(index);
+                }
+                break;
             case 'volume':
                 const vol = parseFloat(value);
                 if (!isNaN(vol)) {
@@ -268,6 +274,37 @@ function startDashboard(client, queueManager) {
             queue: allSongs,
             currentIndex: queue.currentIndex
         });
+    });
+
+    // API: Remove Song from Queue
+    app.post('/api/queue/remove/:guildId/:index', (req, res) => {
+        if (!req.isAuthenticated()) return res.status(401).json({ error: 'Unauthorized' });
+        
+        const { guildId, index } = req.params;
+        const queue = queueManager.get(guildId);
+        
+        if (!queue) return res.status(404).json({ error: 'No active queue' });
+        
+        const success = queue.removeSong(parseInt(index));
+        if (success) {
+            res.json({ success: true });
+        } else {
+            res.status(400).json({ error: 'Invalid song index' });
+        }
+    });
+
+    // API: Clear Queue
+    app.post('/api/queue/clear/:guildId', (req, res) => {
+        if (!req.isAuthenticated()) return res.status(401).json({ error: 'Unauthorized' });
+        
+        const { guildId } = req.params;
+        const queue = queueManager.get(guildId);
+        
+        if (!queue) return res.status(404).json({ error: 'No active queue' });
+        
+        queue.songs = [];
+        queue.stop();
+        res.json({ success: true });
     });
 
     // API: Get History
@@ -384,6 +421,82 @@ function startDashboard(client, queueManager) {
             res.json(userPlaylists);
         } catch (e) {
             res.status(500).json({ error: 'Failed to fetch playlists' });
+        }
+    });
+
+    // API: Create Playlist
+    app.post('/api/playlists', express.json(), async (req, res) => {
+        if (!req.isAuthenticated()) return res.status(401).json({ error: 'Unauthorized' });
+        
+        const { name } = req.body;
+        if (!name) return res.status(400).json({ error: 'Name is required' });
+
+        try {
+            const playlists = await readPlaylists();
+            const newPlaylist = {
+                id: Date.now().toString(),
+                name,
+                userId: req.user.id,
+                songs: []
+            };
+            playlists.push(newPlaylist);
+            await writePlaylists(playlists);
+            res.json(newPlaylist);
+        } catch (e) {
+            res.status(500).json({ error: 'Failed to create playlist' });
+        }
+    });
+
+    // API: Delete Playlist
+    app.delete('/api/playlists/:id', async (req, res) => {
+        if (!req.isAuthenticated()) return res.status(401).json({ error: 'Unauthorized' });
+        
+        try {
+            let playlists = await readPlaylists();
+            playlists = playlists.filter(p => p.id !== req.params.id || p.userId !== req.user.id);
+            await writePlaylists(playlists);
+            res.json({ success: true });
+        } catch (e) {
+            res.status(500).json({ error: 'Failed to delete playlist' });
+        }
+    });
+
+    // API: Remove Song from Playlist
+    app.delete('/api/playlists/:playlistId/songs/:index', async (req, res) => {
+        if (!req.isAuthenticated()) return res.status(401).json({ error: 'Unauthorized' });
+        
+        try {
+            const { playlistId, index } = req.params;
+            const playlists = await readPlaylists();
+            const playlist = playlists.find(p => p.id === playlistId && p.userId === req.user.id);
+            
+            if (!playlist) return res.status(404).json({ error: 'Playlist not found' });
+            
+            playlist.songs.splice(parseInt(index), 1);
+            await writePlaylists(playlists);
+            res.json({ success: true });
+        } catch (e) {
+            res.status(500).json({ error: 'Failed to remove song' });
+        }
+    });
+
+    // API: Add Song to Playlist
+    app.post('/api/playlists/:playlistId/add', express.json(), async (req, res) => {
+        if (!req.isAuthenticated()) return res.status(401).json({ error: 'Unauthorized' });
+        
+        try {
+            const { playlistId } = req.params;
+            const { song } = req.body;
+            const playlists = await readPlaylists();
+            const playlist = playlists.find(p => p.id === playlistId && p.userId === req.user.id);
+            
+            if (!playlist) return res.status(404).json({ error: 'Playlist not found' });
+            
+            playlist.songs.push(song);
+            await writePlaylists(playlists);
+            res.json({ success: true });
+        } catch (e) {
+            res.status(500).json({ error: 'Failed to add song' });
         }
     });
     

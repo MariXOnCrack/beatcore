@@ -748,7 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         return `
-            <div class="queue-list-item ${itemClass}" onclick="jumpToSong(${realIndex})">
+            <div class="queue-list-item ${itemClass}" ondblclick="jumpToSong(${realIndex})">
                 <div class="q-item-pos">
                     ${iconOrPos}
                 </div>
@@ -1295,30 +1295,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
             try {
-                const response = await fetch('/api/playlists');
-                if (response.ok) {
-                    const playlists = await response.json();
-                    const playlist = playlists.find(p => p.id === currentPlaylistId);
-                    if (playlist && playlist.songs.length > 0) {
-                        const playResponse = await fetch('/api/play/batch', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                songs: playlist.songs,
-                                guildId
-                            })
-                        });
-                        
-                        if (playResponse.ok) {
-                            showNotification(`Added ${playlist.songs.length} songs to queue!`, 'success');
-                            fetchQueue();
-                        }
-                    } else {
-                        showNotification('Playlist is empty!', 'warning');
-                    }
+                const playResponse = await fetch('/api/play-playlist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        playlistId: currentPlaylistId,
+                        guildId
+                    })
+                });
+                
+                if (playResponse.ok) {
+                    const result = await playResponse.json();
+                    showNotification(result.message || 'Added playlist to queue!', 'success');
+                    fetchQueue();
+                } else {
+                    const error = await playResponse.json();
+                    showNotification(error.error || 'Failed to play playlist', 'error');
                 }
             } catch (error) {
                 console.error('Error playing all:', error);
+                showNotification('An error occurred', 'error');
             }
         });
     }

@@ -74,6 +74,8 @@ class GuildQueue {
     }
 
     async play(seekTime = 0) {
+        this.killCurrentProcess(); // Ensure old processes are dead before starting new ones
+
         if (this.currentIndex >= this.songs.length || this.currentIndex < 0) {
             this.isPlaying = false;
             return;
@@ -193,6 +195,37 @@ class GuildQueue {
     handleError(error) {
         console.error(`[Player ${this.guildId}] Error:`, error);
         this.skip();
+    }
+
+    jump(index) {
+        if (index >= 0 && index < this.songs.length) {
+            this.currentIndex = index;
+            this.play();
+        }
+    }
+
+    removeSong(index) {
+        if (index < 0 || index >= this.songs.length) return false;
+        
+        const isCurrent = (index === this.currentIndex);
+        this.songs.splice(index, 1);
+        
+        if (isCurrent) {
+            // If we removed the currently playing song, skip it
+            if (this.songs.length === 0) {
+                this.stop();
+            } else {
+                if (this.currentIndex >= this.songs.length) {
+                    this.currentIndex = 0; // Wrap around if we were at the end
+                }
+                this.play();
+            }
+        } else if (index < this.currentIndex) {
+            // If we removed a song BEFORE the current one, decrement index
+            this.currentIndex--;
+        }
+        
+        return true;
     }
 
     skip() {
