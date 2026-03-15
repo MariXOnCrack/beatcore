@@ -232,6 +232,9 @@ function startDashboard(client, queueManager) {
             case 'shuffle':
                 queue.isShuffled = !queue.isShuffled;
                 break;
+            case 'back':
+                queue.back();
+                break;
             case 'jump':
                 const index = parseInt(value);
                 if (!isNaN(index)) {

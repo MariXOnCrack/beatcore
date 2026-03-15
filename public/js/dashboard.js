@@ -169,6 +169,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => sendControl('back'));
+    }
+
     if (nextBtn) {
         nextBtn.addEventListener('click', () => sendControl('skip'));
     }

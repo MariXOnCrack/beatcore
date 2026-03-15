@@ -88,6 +88,7 @@ class GuildQueue {
         try {
             const args = [
                 '--ffmpeg-location', ffmpegPath,
+                '--js-runtimes', 'node',
                 '-f', 'bestaudio',
                 '-o', '-'
             ];
@@ -103,6 +104,12 @@ class GuildQueue {
             if (!ytDlpProcess.ytDlpProcess) {
                 throw new Error('yt-dlp process failed to start.');
             }
+
+            // Handle unhandled error events from yt-dlp-wrap
+            ytDlpProcess.on('error', (error) => {
+                console.error(`[yt-dlp-wrap ${this.guildId}] Process error:`, error);
+                // The main catch block or player error handler will handle the cleanup if needed
+            });
             
             let stream = ytDlpProcess.ytDlpProcess.stdout;
             
