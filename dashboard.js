@@ -538,6 +538,14 @@ function startDashboard(client, queueManager) {
         res.json({ success: true, message: `Added ${playlist.songs.length} songs to queue` });
     });
 
+    // Helper function to format seconds to MM:SS
+    function formatDuration(seconds) {
+        if (!seconds || seconds === 0) return '0:00';
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
     // API: Search YouTube
     app.get('/api/search', async (req, res) => {
         if (!req.isAuthenticated()) {
@@ -560,7 +568,7 @@ function startDashboard(client, queueManager) {
                 title: video.title,
                 url: video.url,
                 thumbnail: video.thumbnail,
-                timestamp: video.duration ? video.duration.toString() : '?:??',
+                timestamp: video.duration ? formatDuration(video.duration) : '?:??',
                 author: video.author ? video.author.name : 'Unknown'
             }));
 
