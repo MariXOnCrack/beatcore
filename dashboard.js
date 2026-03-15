@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 const passport = require('passport');
 const { Strategy } = require('passport-discord');
 const path = require('path');
@@ -42,9 +43,16 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
-    secret: 'keyboard cat', // Change this in production
+    store: new FileStore({
+        path: './sessions',
+        logFn: () => {} // Disable logging to keep console clean
+    }),
+    secret: process.env.SESSION_SECRET || 'beatcore-secret-key',
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    cookie: {
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+    }
 }));
 app.use(passport.initialize());
 app.use(passport.session());

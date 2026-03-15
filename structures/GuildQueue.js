@@ -289,11 +289,8 @@ class GuildQueue {
 
     setFilters(filters) {
         this.filters = filters;
-        // Restart current song to apply
-        const currentPos = (this.resource ? this.resource.playbackDuration : 0) + this.seekTime;
-        // Ideally we seek to current position, but filters change timing/audio, so maybe just restart or seek.
-        // Seeking with filters is fine.
-        this.seek(currentPos / 1000);
+        // Restart current song from the start to apply filters
+        this.play(0);
     }
     
     killCurrentProcess() {
