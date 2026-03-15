@@ -1923,7 +1923,7 @@ body.login-page::before {
     color: var(--color-text-primary);
     background: rgba(255, 255, 255, 0.1);
     transform: scale(1.02);
-}}
+}
 
 .no-playlists {
     grid-column: 1 / -1;
