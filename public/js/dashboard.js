@@ -66,6 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerWrapper = document.querySelector('.player-wrapper');
     const sidebarLogo = document.querySelector('.sidebar-logo');
     
+    const joinVCBtn = document.getElementById('joinVCBtn');
+    
     let colorThief;
     try {
         colorThief = new ColorThief();
@@ -150,16 +152,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!guildId) return;
 
         try {
-            await fetch(`/api/control/${guildId}`, {
+            const response = await fetch(`/api/control/${guildId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action, value })
             });
+            
+            if (!response.ok) {
+                const result = await response.json();
+                if (result.error && typeof showNotification === 'function') {
+                    showNotification(result.error, 'error');
+                }
+            }
+
             // Immediate status fetch could make UI snappier
             setTimeout(fetchStatus, 100);
         } catch (error) {
             console.error('Control error:', error);
         }
+    }
+
+    if (joinVCBtn) {
+        joinVCBtn.addEventListener('click', () => {
+            const hasQueue = joinVCBtn.querySelector('span').textContent === 'door_back';
+            sendControl(hasQueue ? 'leave' : 'join');
+        });
     }
 
     if (playPauseBtn) {
@@ -263,6 +280,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (playPauseBtn) {
             const icon = playPauseBtn.querySelector('span');
             icon.textContent = status.isPlaying ? 'pause_circle_filled' : 'play_circle_filled';
+        }
+
+        // Update Join VC Icon
+        if (joinVCBtn) {
+            const icon = joinVCBtn.querySelector('span');
+            if (status.hasQueue) {
+                icon.textContent = 'door_back';
+                joinVCBtn.title = 'Leave Voice Channel';
+                joinVCBtn.style.color = '#5865F2';
+            } else {
+                icon.textContent = 'meeting_room';
+                joinVCBtn.title = 'Join Voice Channel';
+                joinVCBtn.style.color = '';
+            }
         }
 
         // Update Logo Spin

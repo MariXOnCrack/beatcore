@@ -220,6 +220,24 @@ function startDashboard(client, queueManager) {
         const guildId = req.params.guildId;
         const { action, value } = req.body;
         
+        if (action === 'join') {
+            const guild = client.guilds.cache.get(guildId);
+            if (!guild) return res.status(404).json({ error: 'Guild not found' });
+
+            const member = guild.members.cache.get(req.user.id);
+            if (!member || !member.voice.channel) {
+                return res.status(400).json({ error: 'You must be in a voice channel' });
+            }
+
+            queueManager.create(guildId, member.voice.channel, client);
+            return res.json({ success: true, message: 'Joined voice channel' });
+        }
+
+        if (action === 'leave') {
+            queueManager.delete(guildId);
+            return res.json({ success: true, message: 'Left voice channel' });
+        }
+
         const queue = queueManager.get(guildId);
         if (!queue) return res.status(404).json({ error: 'No active queue' });
 
@@ -341,6 +359,7 @@ function startDashboard(client, queueManager) {
         
         if (!queue) {
             return res.json({
+                hasQueue: false,
                 isPlaying: false,
                 isPaused: false,
                 volume: 20,
@@ -368,6 +387,7 @@ function startDashboard(client, queueManager) {
         const currentPos = (queue.resource ? queue.resource.playbackDuration : 0) + seekTime;
 
         res.json({
+            hasQueue: true,
             isPlaying: isPlaying,
             isPaused: isPaused,
             volume: Math.round(queue.volume * 100),
